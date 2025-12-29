@@ -6,9 +6,10 @@ import { PlaywrightCrawler, Configuration } from 'crawlee';
  * @param {string} options.seedUrl - The starting URL to crawl
  * @param {Object} options.config - Crawler configuration settings
  * @param {Function} options.requestHandler - Function to handle each page
+ * @param {Function} [options.onQueueUpdate] - Callback when queue size changes
  * @returns {PlaywrightCrawler} Configured crawler instance
  */
-export function createCrawler({ seedUrl, config, requestHandler }) {
+export function createCrawler({ seedUrl, config, requestHandler, onQueueUpdate }) {
     // Extract the base domain from the seed URL for internal link filtering
     const seedUrlObj = new URL(seedUrl);
     const baseDomain = seedUrlObj.hostname;
@@ -38,15 +39,18 @@ export function createCrawler({ seedUrl, config, requestHandler }) {
 
         // Main request handler
         async requestHandler(context) {
-            const { request, page, enqueueLinks, log } = context;
+            const { request, page, enqueueLinks, log, crawler } = context;
 
             log.info(`Processing: ${request.url}`);
 
             // Call the provided request handler
             await requestHandler(context);
 
+            // Track queue size before enqueueing
+            const queueBefore = await crawler.requestQueue?.handledCount() || 0;
+
             // Enqueue only internal links (same domain)
-            await enqueueLinks({
+            const enqueueResult = await enqueueLinks({
                 strategy: 'same-domain',
                 transformRequestFunction: (req) => {
                     // Skip non-HTTP URLs
@@ -75,6 +79,18 @@ export function createCrawler({ seedUrl, config, requestHandler }) {
                     return req;
                 },
             });
+
+            // Notify about queue update if callback provided
+            if (onQueueUpdate && crawler.requestQueue) {
+                try {
+                    const info = await crawler.requestQueue.getInfo();
+                    if (info) {
+                        onQueueUpdate(info.totalRequestCount);
+                    }
+                } catch {
+                    // Ignore errors from queue info
+                }
+            }
         },
 
         // Handle failed requests
@@ -92,10 +108,11 @@ export function createCrawler({ seedUrl, config, requestHandler }) {
  * @param {string} options.seedUrl - The starting URL to crawl
  * @param {Object} options.config - Crawler configuration
  * @param {Function} options.requestHandler - Function to handle each page
+ * @param {Function} [options.onQueueUpdate] - Callback when queue size changes
  * @returns {Promise<Object>} Crawl statistics
  */
-export async function runCrawler({ seedUrl, config, requestHandler }) {
-    const crawler = createCrawler({ seedUrl, config, requestHandler });
+export async function runCrawler({ seedUrl, config, requestHandler, onQueueUpdate }) {
+    const crawler = createCrawler({ seedUrl, config, requestHandler, onQueueUpdate });
 
     console.log(`\nStarting crawl from: ${seedUrl}\n`);
 
