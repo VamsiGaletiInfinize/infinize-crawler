@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { spawn } from 'child_process';
 import path from 'path';
 import fs from 'fs/promises';
 
@@ -9,15 +8,116 @@ interface StartRequest {
     outputFormats?: string[];
 }
 
+// Store for active crawls to prevent duplicates
+const activeCrawls = new Set<string>();
+
+/**
+ * Dynamically import and run the crawler
+ * This runs asynchronously without blocking the API response
+ */
+async function runCrawlerAsync(seedUrl: string, universityName: string, crawlId: string) {
+    try {
+        // Dynamic imports for crawler modules
+        const { runCrawler } = await import('../../../../crawler/crawler.js');
+        const { createPageHandler } = await import('../../../../crawler/handlers/pageHandler.js');
+        const { updateProgress, completeProgress, failProgress } = await import('../../../../crawler/progressWriter.js');
+        const { initSingleFile, appendToSingleFile, finalizeSingleFile } = await import('../../../../crawler/singleFileFormatter.js');
+        const defaultConfig = (await import('../../../../config/default.config.js')).default;
+
+        const config = defaultConfig;
+        const baseDir = config.output.baseDir;
+
+        // Initialize single file output
+        const outputFilePath = await initSingleFile({
+            baseDir,
+            universityName,
+            seedUrl,
+        });
+
+        // Track statistics
+        let pagesProcessed = 0;
+        let totalEnqueued = 1;
+        const processedUrls = new Set<string>();
+
+        // Create page handler with progress updates
+        const pageHandler = createPageHandler({
+            config,
+            onPageData: async (pageData: { url: string; [key: string]: unknown }) => {
+                if (processedUrls.has(pageData.url)) {
+                    return;
+                }
+                processedUrls.add(pageData.url);
+                pagesProcessed++;
+
+                await appendToSingleFile({
+                    baseDir,
+                    universityName,
+                    pageData,
+                });
+
+                await updateProgress({
+                    baseDir,
+                    universityName,
+                    pagesProcessed,
+                    totalEnqueued,
+                    currentUrl: pageData.url,
+                });
+            },
+            onEnqueue: (count: number) => {
+                totalEnqueued = count;
+            },
+        });
+
+        // Run the crawler
+        await runCrawler({
+            seedUrl,
+            config,
+            requestHandler: pageHandler,
+            onQueueUpdate: (count: number) => {
+                totalEnqueued = Math.max(totalEnqueued, count);
+            },
+        });
+
+        // Finalize
+        await finalizeSingleFile({
+            baseDir,
+            universityName,
+            pagesProcessed,
+            seedUrl,
+        });
+
+        await completeProgress({
+            baseDir,
+            universityName,
+            pagesProcessed,
+            outputFile: outputFilePath,
+        });
+
+        console.log(`Crawl completed for ${universityName}: ${pagesProcessed} pages`);
+    } catch (error) {
+        console.error(`Crawl failed for ${universityName}:`, error);
+
+        const defaultConfig = (await import('../../../../config/default.config.js')).default;
+        const { failProgress } = await import('../../../../crawler/progressWriter.js');
+
+        await failProgress({
+            baseDir: defaultConfig.output.baseDir,
+            universityName,
+            error: error instanceof Error ? error.message : 'Unknown error',
+        });
+    } finally {
+        activeCrawls.delete(crawlId);
+    }
+}
+
 /**
  * POST /api/crawl/start
- * Starts a new crawl as a background process
+ * Starts a new crawl asynchronously
  */
 export async function POST(request: NextRequest) {
     try {
         const body: StartRequest = await request.json();
-
-        const { seedUrl, universityName, outputFormats = ['markdown'] } = body;
+        const { seedUrl, universityName } = body;
 
         // Validate required fields
         if (!seedUrl) {
@@ -47,13 +147,21 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Generate crawlId from university name
+        // Generate crawlId
         const crawlId = universityName
             .toLowerCase()
             .replace(/\s+/g, '-')
             .replace(/[^a-z0-9-]/g, '');
 
-        // Initialize progress file before spawning
+        // Check if crawl is already running
+        if (activeCrawls.has(crawlId)) {
+            return NextResponse.json(
+                { success: false, error: 'A crawl for this university is already running' },
+                { status: 409 }
+            );
+        }
+
+        // Initialize progress file
         const baseDir = process.env.OUTPUT_DIR || './output';
         const progressDir = path.join(process.cwd(), baseDir, crawlId);
         const progressPath = path.join(progressDir, 'progress.json');
@@ -75,41 +183,16 @@ export async function POST(request: NextRequest) {
 
         await fs.writeFile(progressPath, JSON.stringify(initialProgress, null, 2), 'utf8');
 
-        // Path to the background runner
-        const crawlerPath = path.join(process.cwd(), 'crawler', 'backgroundRunner.js');
+        // Mark as active and start crawl asynchronously (don't await)
+        activeCrawls.add(crawlId);
+        runCrawlerAsync(seedUrl, universityName, crawlId);
 
-        // Build arguments
-        const args = [
-            crawlerPath,
-            '--seedUrl',
-            seedUrl,
-            '--universityName',
-            universityName,
-            '--formats',
-            outputFormats.join(','),
-        ];
-
-        // Spawn the crawler as a detached child process
-        const child = spawn('node', args, {
-            detached: true,
-            stdio: 'ignore',
-            cwd: process.cwd(),
-            env: {
-                ...process.env,
-                NODE_ENV: 'production',
-            },
-        });
-
-        // Unref to allow parent to exit independently
-        child.unref();
-
-        console.log(`Started crawler process with PID: ${child.pid}`);
+        console.log(`Started crawler for: ${universityName}`);
 
         return NextResponse.json({
             success: true,
             crawlId,
             message: 'Crawler started successfully',
-            pid: child.pid,
         });
     } catch (error) {
         console.error('Failed to start crawler:', error);

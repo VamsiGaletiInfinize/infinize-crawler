@@ -1,4 +1,4 @@
-import { PlaywrightCrawler, Configuration } from 'crawlee';
+import { PlaywrightCrawler, Configuration } from '@crawlee/playwright';
 
 /**
  * Creates and configures the Playwright crawler

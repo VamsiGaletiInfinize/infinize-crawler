@@ -9,9 +9,7 @@ A demo web crawler for university websites using **Crawlee**, **Playwright**, an
 - **Background Processing** - Crawler runs as a detached process, doesn't block the UI
 - **Single File Output** - Consolidated markdown file per university
 - Extracts page titles, headings, main content, and internal links
-- Configurable output formats: JSON, Markdown, HTML, Links
 - File-only persistence (no database required)
-- CLI mode for scripted usage
 
 ## Tech Stack
 
@@ -34,8 +32,6 @@ npm install
 
 ## Usage
 
-### Web UI Mode (Recommended)
-
 Start the Next.js development server:
 
 ```bash
@@ -49,19 +45,6 @@ Open [http://localhost:3000/admin](http://localhost:3000/admin) in your browser.
 3. Select **Output Formats** (optional)
 4. Click **Start Crawl**
 5. Watch the progress bar update in real-time
-
-### CLI Mode
-
-For scripted or headless usage:
-
-```bash
-npm run crawl
-```
-
-You will be prompted for:
-- **Seed URL**: The starting URL to crawl
-- **University Name**: Used for organizing output files
-- **Output Formats**: Choose from json, markdown, html, links
 
 ## Output
 
@@ -172,8 +155,6 @@ export default {
     },
     output: {
         baseDir: './output',
-        availableFormats: ['json', 'markdown', 'html', 'links'],
-        defaultFormats: ['json', 'markdown'],
     },
     extraction: {
         mainContentSelectors: ['main', 'article', '[role="main"]', ...],
@@ -201,19 +182,11 @@ infinize-crawler/
 │   ├── ProgressBar.tsx           # Live progress display
 │   └── OutputFormatSelector.tsx  # Checkbox group
 ├── crawler/                      # Crawler logic
-│   ├── index.js                  # CLI entry point
-│   ├── backgroundRunner.js       # Background process entry
 │   ├── crawler.js                # Crawlee + Playwright setup
 │   ├── progressWriter.js         # Progress file management
 │   ├── singleFileFormatter.js    # Single MD file output
 │   ├── handlers/
 │   │   └── pageHandler.js        # Page data extraction
-│   ├── formatters/
-│   │   ├── index.js              # Formatter registry
-│   │   ├── jsonFormatter.js
-│   │   ├── markdownFormatter.js
-│   │   ├── htmlFormatter.js
-│   │   └── linksFormatter.js
 │   └── utils/
 │       ├── fileWriter.js         # File I/O utilities
 │       ├── sanitizer.js          # Filename sanitization
@@ -222,7 +195,8 @@ infinize-crawler/
 │   └── default.config.js         # Default configuration
 ├── output/                       # Generated output (gitignored)
 ├── next.config.js
-├── tailwind.config.js
+├── tailwind.config.cjs
+├── postcss.config.cjs
 ├── tsconfig.json
 └── package.json
 ```
@@ -234,16 +208,6 @@ infinize-crawler/
 | `npm run dev` | Start Next.js development server |
 | `npm run build` | Build for production |
 | `npm start` | Start production server |
-| `npm run crawl` | Run CLI mode |
-
-## Constraints
-
-This demo application follows strict constraints:
-
-- **No databases** - File system only for persistence
-- **No external storage** - All data stored locally
-- **Background execution** - Crawler runs as detached process
-- **File-based progress** - Progress tracked via JSON file
 
 ## License
 

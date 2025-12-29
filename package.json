@@ -6,9 +6,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start",
-    "crawl": "node crawler/index.js",
-    "crawl:cli": "node crawler/index.js"
+    "start": "next start"
   },
   "keywords": [
     "crawler",
@@ -21,7 +19,7 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "crawlee": "^3.12.1",
+    "@crawlee/playwright": "^3.12.1",
     "next": "^14.2.0",
     "playwright": "^1.49.1",
     "react": "^18.2.0",
