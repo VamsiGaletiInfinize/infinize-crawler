@@ -1,18 +1,22 @@
 # Infinize Crawler
 
-A demo web crawler for university websites using **Crawlee** and **Playwright**.
+A demo web crawler for university websites using **Crawlee**, **Playwright**, and **Next.js**.
 
 ## Features
 
-- Crawls university websites starting from a seed URL
+- **Web UI Admin Panel** - Start and monitor crawls from your browser
+- **Live Progress Tracking** - Real-time progress bar with page counts
+- **Background Processing** - Crawler runs as a detached process, doesn't block the UI
+- **Single File Output** - Consolidated markdown file per university
 - Extracts page titles, headings, main content, and internal links
 - Configurable output formats: JSON, Markdown, HTML, Links
 - File-only persistence (no database required)
-- Interactive prompts for easy configuration
-- Graceful shutdown handling
+- CLI mode for scripted usage
 
 ## Tech Stack
 
+- **Next.js 14** - React framework for the admin UI
+- **Tailwind CSS** - Styling
 - **Node.js** (v18+)
 - **Crawlee** - Web crawling orchestration (Apache-2.0)
 - **Playwright** - Browser automation for JS-rendered pages (Apache-2.0)
@@ -30,160 +34,127 @@ npm install
 
 ## Usage
 
-### Interactive Mode
+### Web UI Mode (Recommended)
 
-Run the crawler with interactive prompts:
+Start the Next.js development server:
 
 ```bash
-npm start
+npm run dev
+```
+
+Open [http://localhost:3000/admin](http://localhost:3000/admin) in your browser.
+
+1. Enter the **Seed URL** (e.g., `https://university.edu`)
+2. Enter the **University Name** (e.g., `Example University`)
+3. Select **Output Formats** (optional)
+4. Click **Start Crawl**
+5. Watch the progress bar update in real-time
+
+### CLI Mode
+
+For scripted or headless usage:
+
+```bash
+npm run crawl
 ```
 
 You will be prompted for:
-- **Seed URL**: The starting URL to crawl (e.g., `https://university.edu`)
-- **University Name**: Used for organizing output files (e.g., `Example University`)
-- **Output Formats**: Choose from json, markdown, html, links (comma-separated)
+- **Seed URL**: The starting URL to crawl
+- **University Name**: Used for organizing output files
+- **Output Formats**: Choose from json, markdown, html, links
 
-### Example Session
+## Output
+
+### Single Markdown File
+
+The primary output is a consolidated markdown file:
 
 ```
-========================================
-   INFINIZE CRAWLER - University Crawler
-========================================
-
-Enter the seed URL (e.g., https://university.edu): https://example-university.edu
-Enter the university name: Example University
-
-Available formats: json, markdown, html, links
-Default: json, markdown
-Select output formats (comma-separated, or press Enter for default): json,markdown,links
-
-  Selected formats: json, markdown, links
-
-----------------------------------------
-Starting crawl...
-  Seed URL: https://example-university.edu
-  University: Example University
-  Formats: json, markdown, links
-  Output: ./output/example-university/
-----------------------------------------
-
-Processing: https://example-university.edu
-  Processed 10 pages...
-  Processed 20 pages...
-
-========================================
-   CRAWL COMPLETE
-========================================
-  Pages processed: 25
-  Files saved: 50
-  Requests finished: 25
-  Requests failed: 0
-========================================
-
-Done! Check the output directory for results.
+output/<university-name>/<university-name>.md
 ```
 
-## Output Formats
-
-### JSON
-
-Structured JSON files containing all extracted data:
-
-```json
-{
-  "url": "https://example-university.edu/about",
-  "title": "About Us",
-  "headings": {
-    "h1": ["About Example University"],
-    "h2": ["History", "Mission", "Values"],
-    "h3": []
-  },
-  "mainText": "Example University was founded in...",
-  "internalLinks": [
-    "https://example-university.edu/contact",
-    "https://example-university.edu/history"
-  ],
-  "crawledAt": "2025-12-29T10:30:00.000Z"
-}
-```
-
-### Markdown
-
-Human-readable Markdown files with structured content:
+Example content:
 
 ```markdown
-# About Us
+# Example University
 
-**URL:** https://example-university.edu/about
-**Crawled:** 2025-12-29T10:30:00.000Z
-
----
-
-## Page Structure
-
-### H1 Headings
-- About Example University
-
-### H2 Headings
-- History
-- Mission
-- Values
+**Seed URL:** https://university.edu
+**Pages Crawled:** 50
+**Generated:** 2025-12-29T10:05:30.000Z
 
 ---
 
-## Content
+## Home Page
+**URL:** https://university.edu
+**Crawled:** 2025-12-29T10:00:05.000Z
 
-Example University was founded in...
+Welcome to Example University...
 
 ---
 
-## Internal Links
+## About Us
+**URL:** https://university.edu/about
+**Crawled:** 2025-12-29T10:00:10.000Z
 
-- [https://example-university.edu/contact](https://example-university.edu/contact)
+Example University was founded in 1900...
 ```
 
-### HTML
+### Progress Tracking
 
-Styled HTML reports for browser viewing with sections for structure, content, and links.
+Progress is stored in:
 
-### Links
-
-Aggregated list of all discovered internal links (JSON and TXT formats):
+```
+output/<university-name>/progress.json
+```
 
 ```json
 {
-  "universityName": "Example University",
-  "seedUrl": "https://example-university.edu",
-  "totalLinks": 150,
-  "generatedAt": "2025-12-29T10:30:00.000Z",
-  "links": [
-    "https://example-university.edu/",
-    "https://example-university.edu/about",
-    ...
-  ]
+  "status": "completed",
+  "pagesProcessed": 50,
+  "totalEnqueued": 50,
+  "currentUrl": "https://university.edu/contact",
+  "startTime": "2025-12-29T10:00:00.000Z",
+  "endTime": "2025-12-29T10:05:30.000Z",
+  "outputFile": "./output/example-university/example-university.md"
 }
 ```
 
-## Output Directory Structure
+## API Endpoints
 
+### POST /api/crawl/start
+
+Start a new crawl.
+
+**Request:**
+```json
+{
+  "seedUrl": "https://university.edu",
+  "universityName": "Example University",
+  "outputFormats": ["markdown"]
+}
 ```
-output/
-└── example-university/
-    ├── json/
-    │   ├── index.json
-    │   ├── about.json
-    │   └── admissions.json
-    ├── markdown/
-    │   ├── index.md
-    │   ├── about.md
-    │   └── admissions.md
-    ├── html/
-    │   ├── index.html
-    │   ├── about.html
-    │   └── admissions.html
-    └── links/
-        ├── all-links.json
-        └── all-links.txt
+
+**Response:**
+```json
+{
+  "success": true,
+  "crawlId": "example-university",
+  "message": "Crawler started successfully"
+}
+```
+
+### GET /api/crawl/status?crawlId=example-university
+
+Get crawl progress.
+
+**Response:**
+```json
+{
+  "status": "running",
+  "pagesProcessed": 25,
+  "totalEnqueued": 100,
+  "currentUrl": "https://university.edu/about"
+}
 ```
 
 ## Configuration
@@ -206,44 +177,64 @@ export default {
     },
     extraction: {
         mainContentSelectors: ['main', 'article', '[role="main"]', ...],
-        excludeSelectors: ['nav', 'header', 'footer', ...],
+        excludeSelectors: ['nav', 'header', 'footer', '.breadcrumb', ...],
     },
 };
-```
-
-## Debug Mode
-
-For verbose error output, run with the DEBUG environment variable:
-
-```bash
-DEBUG=1 npm start
 ```
 
 ## Project Structure
 
 ```
 infinize-crawler/
-├── package.json              # Dependencies and scripts
-├── config/
-│   └── default.config.js     # Default configuration
-├── src/
-│   ├── index.js              # CLI entry point
-│   ├── crawler.js            # Crawlee + Playwright setup
+├── app/                          # Next.js App Router
+│   ├── layout.tsx                # Root layout
+│   ├── page.tsx                  # Redirect to /admin
+│   ├── globals.css               # Tailwind imports
+│   ├── admin/
+│   │   └── page.tsx              # Admin UI page
+│   └── api/
+│       └── crawl/
+│           ├── start/route.ts    # POST: Start crawler
+│           └── status/route.ts   # GET: Poll progress
+├── components/
+│   ├── CrawlForm.tsx             # Form with inputs
+│   ├── ProgressBar.tsx           # Live progress display
+│   └── OutputFormatSelector.tsx  # Checkbox group
+├── crawler/                      # Crawler logic
+│   ├── index.js                  # CLI entry point
+│   ├── backgroundRunner.js       # Background process entry
+│   ├── crawler.js                # Crawlee + Playwright setup
+│   ├── progressWriter.js         # Progress file management
+│   ├── singleFileFormatter.js    # Single MD file output
 │   ├── handlers/
-│   │   └── pageHandler.js    # Page data extraction
+│   │   └── pageHandler.js        # Page data extraction
 │   ├── formatters/
-│   │   ├── index.js          # Formatter registry
+│   │   ├── index.js              # Formatter registry
 │   │   ├── jsonFormatter.js
 │   │   ├── markdownFormatter.js
 │   │   ├── htmlFormatter.js
 │   │   └── linksFormatter.js
 │   └── utils/
-│       ├── fileWriter.js     # File I/O utilities
-│       ├── sanitizer.js      # Filename sanitization
-│       └── urlUtils.js       # URL utilities
-├── output/                   # Generated output (gitignored)
-└── storage/                  # Crawlee storage (gitignored)
+│       ├── fileWriter.js         # File I/O utilities
+│       ├── sanitizer.js          # Filename sanitization
+│       └── urlUtils.js           # URL utilities
+├── config/
+│   └── default.config.js         # Default configuration
+├── output/                       # Generated output (gitignored)
+├── next.config.js
+├── tailwind.config.js
+├── tsconfig.json
+└── package.json
 ```
+
+## Scripts
+
+| Script | Description |
+|--------|-------------|
+| `npm run dev` | Start Next.js development server |
+| `npm run build` | Build for production |
+| `npm start` | Start production server |
+| `npm run crawl` | Run CLI mode |
 
 ## Constraints
 
@@ -251,8 +242,8 @@ This demo application follows strict constraints:
 
 - **No databases** - File system only for persistence
 - **No external storage** - All data stored locally
-- **No AGPL libraries** - Only Apache-2.0 and MIT licensed dependencies
-- **JavaScript only** - Node.js with ES modules
+- **Background execution** - Crawler runs as detached process
+- **File-based progress** - Progress tracked via JSON file
 
 ## License
 

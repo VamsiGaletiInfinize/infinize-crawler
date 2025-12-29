@@ -47,6 +47,7 @@ export default {
 
         // Selectors to exclude from content extraction
         excludeSelectors: [
+            // Navigation and structure
             'nav',
             'header',
             'footer',
@@ -54,11 +55,67 @@ export default {
             '.sidebar',
             '.navigation',
             '.menu',
+            '[role="navigation"]',
+            '[role="banner"]',
+            '[role="contentinfo"]',
+
+            // Ads and promotional
             '.ads',
             '.advertisement',
+            '.ad-container',
+            '.sponsored',
+            '.promo',
+
+            // Scripts and styles
             'script',
             'style',
             'noscript',
+            'iframe',
+            'svg',
+
+            // Common UI elements
+            '.breadcrumb',
+            '.breadcrumbs',
+            '[aria-label="breadcrumb"]',
+            '.pagination',
+            '.pager',
+            '.social-share',
+            '.social-links',
+            '.share-buttons',
+            '.cookie-notice',
+            '.cookie-banner',
+            '.cookie-consent',
+            '.gdpr-notice',
+            '#cookie-notice',
+            '#cookie-banner',
+
+            // Search and forms
+            '.search-form',
+            '.search-box',
+            '#search',
+            '.login-form',
+            '.signup-form',
+
+            // Comments and user content
+            '.comments',
+            '#comments',
+            '.comment-form',
+            '.related-posts',
+            '.recommended',
+
+            // Widgets
+            '.widget',
+            '.newsletter',
+            '.subscribe',
+            '.popup',
+            '.modal',
+            '.overlay',
+
+            // Print and accessibility
+            '.skip-link',
+            '.screen-reader-text',
+            '.sr-only',
+            '.print-only',
         ],
     },
 };
