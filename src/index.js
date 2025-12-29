@@ -227,6 +227,35 @@ async function crawl(userConfig) {
 }
 
 /**
+ * Handles graceful shutdown
+ * @param {string} signal - The signal that triggered shutdown
+ */
+function handleShutdown(signal) {
+    console.log(`\n\nReceived ${signal}. Shutting down gracefully...`);
+    console.log('Note: Some files may have been partially saved.');
+    rl.close();
+    process.exit(0);
+}
+
+// Register shutdown handlers
+process.on('SIGINT', () => handleShutdown('SIGINT'));
+process.on('SIGTERM', () => handleShutdown('SIGTERM'));
+
+// Handle uncaught exceptions
+process.on('uncaughtException', (error) => {
+    console.error('\nUncaught Exception:', error.message);
+    console.error('Stack:', error.stack);
+    rl.close();
+    process.exit(1);
+});
+
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('\nUnhandled Rejection at:', promise);
+    console.error('Reason:', reason);
+});
+
+/**
  * Main entry point
  */
 async function main() {
@@ -244,6 +273,9 @@ async function main() {
         process.exit(0);
     } catch (error) {
         console.error('\nError:', error.message);
+        if (process.env.DEBUG) {
+            console.error('Stack:', error.stack);
+        }
         rl.close();
         process.exit(1);
     }

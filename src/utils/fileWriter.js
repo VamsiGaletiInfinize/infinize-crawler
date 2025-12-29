@@ -25,15 +25,22 @@ export async function ensureDirectory(dirPath) {
  * Writes content to a file, creating directories as needed
  * @param {string} filePath - Full path to the file
  * @param {string} content - Content to write
- * @returns {Promise<void>}
+ * @returns {Promise<boolean>} True if successful, false otherwise
  */
 export async function writeOutput(filePath, content) {
-    // Ensure parent directory exists
-    const dirPath = path.dirname(filePath);
-    await ensureDirectory(dirPath);
+    try {
+        // Ensure parent directory exists
+        const dirPath = path.dirname(filePath);
+        await ensureDirectory(dirPath);
 
-    // Write the file
-    await fs.writeFile(filePath, content, 'utf8');
+        // Write the file
+        await fs.writeFile(filePath, content, 'utf8');
+        return true;
+    } catch (error) {
+        // Log error but don't throw - allow crawler to continue
+        console.error(`Failed to write file ${filePath}: ${error.message}`);
+        return false;
+    }
 }
 
 /**
@@ -83,11 +90,16 @@ export async function readJsonFile(filePath) {
  * Writes a JSON file with pretty formatting
  * @param {string} filePath - Path to write to
  * @param {Object} data - Data to write
- * @returns {Promise<void>}
+ * @returns {Promise<boolean>} True if successful, false otherwise
  */
 export async function writeJsonFile(filePath, data) {
-    const content = JSON.stringify(data, null, 2);
-    await writeOutput(filePath, content);
+    try {
+        const content = JSON.stringify(data, null, 2);
+        return await writeOutput(filePath, content);
+    } catch (error) {
+        console.error(`Failed to serialize JSON for ${filePath}: ${error.message}`);
+        return false;
+    }
 }
 
 /**
