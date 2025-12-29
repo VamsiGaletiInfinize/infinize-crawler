@@ -30,3 +30,8 @@ npm-debug.log*
 
 # Claude
 .claude/
+
+# Next.js
+.next/
+out/
+next-env.d.ts
