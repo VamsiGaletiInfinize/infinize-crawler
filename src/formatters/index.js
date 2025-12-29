@@ -3,6 +3,7 @@
  */
 
 import { formatJson, saveJson } from './jsonFormatter.js';
+import { formatMarkdown, saveMarkdown } from './markdownFormatter.js';
 
 // Formatter registry - will be populated as formatters are added
 const formatters = {
@@ -12,7 +13,13 @@ const formatters = {
         format: formatJson,
         save: saveJson,
     },
-    // markdown, html, and links formatters will be added in subsequent branches
+    markdown: {
+        name: 'Markdown',
+        extension: '.md',
+        format: formatMarkdown,
+        save: saveMarkdown,
+    },
+    // html and links formatters will be added in subsequent branches
 };
 
 /**
