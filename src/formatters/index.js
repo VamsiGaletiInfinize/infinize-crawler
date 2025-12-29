@@ -5,8 +5,14 @@
 import { formatJson, saveJson } from './jsonFormatter.js';
 import { formatMarkdown, saveMarkdown } from './markdownFormatter.js';
 import { formatHtml, saveHtml } from './htmlFormatter.js';
+import {
+    formatLinks,
+    saveLinks,
+    initLinksAggregator,
+    finalizeLinks,
+} from './linksFormatter.js';
 
-// Formatter registry - will be populated as formatters are added
+// Formatter registry
 const formatters = {
     json: {
         name: 'JSON',
@@ -26,7 +32,15 @@ const formatters = {
         format: formatHtml,
         save: saveHtml,
     },
-    // links formatter will be added in subsequent branch
+    links: {
+        name: 'Links',
+        extension: '.json',
+        format: formatLinks,
+        save: saveLinks,
+        init: initLinksAggregator,
+        finalize: finalizeLinks,
+        isAggregator: true,
+    },
 };
 
 /**
