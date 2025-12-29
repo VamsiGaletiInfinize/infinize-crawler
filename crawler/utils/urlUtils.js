@@ -17,7 +17,42 @@ export function extractDomain(url) {
 }
 
 /**
- * Normalizes a URL by removing fragments, trailing slashes, and standardizing protocol
+ * Common tracking parameters to remove from URLs
+ */
+const TRACKING_PARAMS = [
+    'utm_source',
+    'utm_medium',
+    'utm_campaign',
+    'utm_term',
+    'utm_content',
+    'utm_id',
+    'fbclid',
+    'gclid',
+    'gclsrc',
+    'dclid',
+    'msclkid',
+    'mc_cid',
+    'mc_eid',
+    'ref',
+    'source',
+    'campaign',
+    '_ga',
+    '_gl',
+    'hsCtaTracking',
+    'hsa_acc',
+    'hsa_cam',
+    'hsa_grp',
+    'hsa_ad',
+    'hsa_src',
+    'hsa_tgt',
+    'hsa_kw',
+    'hsa_mt',
+    'hsa_net',
+    'hsa_ver',
+];
+
+/**
+ * Normalizes a URL by removing fragments, trailing slashes, tracking params, and standardizing protocol
  * @param {string} url - The URL to normalize
  * @returns {string|null} Normalized URL or null if invalid
  */
@@ -33,10 +68,24 @@ export function normalizeUrl(url) {
             urlObj.pathname = urlObj.pathname.replace(/\/+$/, '');
         }
 
-        // Sort query parameters for consistency
+        // Normalize multiple slashes in path
+        urlObj.pathname = urlObj.pathname.replace(/\/+/g, '/');
+
+        // Remove index file names
+        urlObj.pathname = urlObj.pathname.replace(/\/(index|default)\.(html?|php|aspx?)$/i, '');
+
+        // Remove tracking parameters
         const params = new URLSearchParams(urlObj.search);
+        for (const param of TRACKING_PARAMS) {
+            params.delete(param);
+        }
+
+        // Sort remaining query parameters for consistency
         const sortedParams = new URLSearchParams([...params.entries()].sort());
         urlObj.search = sortedParams.toString();
+
+        // Convert to lowercase hostname
+        urlObj.hostname = urlObj.hostname.toLowerCase();
 
         return urlObj.toString();
     } catch {
