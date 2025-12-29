@@ -7,8 +7,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "crawl": "node src/index.js",
-    "crawl:cli": "node src/index.js"
+    "crawl": "node crawler/index.js",
+    "crawl:cli": "node crawler/index.js"
   },
   "keywords": [
     "crawler",
